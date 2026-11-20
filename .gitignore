@@ -1,0 +1,21 @@
+# Build
+bin/
+obj/
+*.user
+
+# Base de données locale (générée au démarrage)
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+*.err
+
+# IDE
+.vs/
+.idea/
+*.suo
+
+# Mémoire de session de l'agent
+agent_memory/
