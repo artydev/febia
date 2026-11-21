@@ -7,12 +7,15 @@ const API_BASE = '/api';
 
 async function requete(chemin, options = {}) {
   const jeton = localStorage.getItem('jeton');
-  const enTetes = { 'Content-Type': 'application/json', ...(options.enTetes || {}) };
+  const enTetes = { 
+    'Content-Type': 'application/json', 
+    ...(options.headers || {}) 
+  };
   if (jeton) enTetes['Authorization'] = `Bearer ${jeton}`;
 
   const reponse = await fetch(`${API_BASE}${chemin}`, {
     ...options,
-    enTetes
+    headers: enTetes
   });
 
   if (reponse.status === 401) {
