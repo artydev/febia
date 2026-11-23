@@ -21,3 +21,8 @@ obj/
 agent_memory/
 
 csagent/
+
+# Artefacts de test et patchs
+correctifs-febia.patch
+test-out.txt
+test-err.txt
