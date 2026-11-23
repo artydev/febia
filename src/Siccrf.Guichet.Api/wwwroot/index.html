@@ -1,145 +1,222 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Guichet intelligent SICCRF — Démonstrateur</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>Guichet intelligent SICCRF — Démonstrateur</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="entete">
-    <h1>Guichet intelligent des demandes d'évolution du SI</h1>
-    <p class="sous-titre">Démonstrateur DGCCRF / SICCRF — séminaire « L'innovation maîtrisée »</p>
-    <div id="zone-session" class="zone-session"></div>
-  </header>
+    <header class="entete">
+        <div class="entete-contenu">
+            <a class="marque" href="/" aria-label="Guichet intelligent — accueil">
+                <svg class="logo" viewBox="0 0 32 32" width="36" height="36" aria-hidden="true" focusable="false">
+                    <rect width="32" height="32" rx="8" fill="currentColor" opacity=".16" />
+                    <path d="M8 10.5A2.5 2.5 0 0 1 10.5 8h11A2.5 2.5 0 0 1 24 10.5v7a2.5 2.5 0 0 1-2.5 2.5H15l-4.5 4v-4A2.5 2.5 0 0 1 8 17.5z"
+                          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                    <path d="m12.5 14 2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" stroke-width="1.8"
+                          stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="marque-texte">
+                    <h1>Guichet intelligent</h1>
+                    <small>Demandes d'évolution du SI · DGCCRF / SICCRF</small>
+                </div>
+            </a>
+            <div id="zone-session" class="zone-session"></div>
+        </div>
+    </header>
 
-  <main>
-    <!-- Écran de connexion -->
-    <section id="vue-connexion" class="vue">
-      <div class="carte">
-        <h2>Connexion</h2>
-        <p class="aide">Comptes de démonstration (mot de passe : <code>demo</code>)</p>
-        <ul class="comptes">
-          <li><code>agent.ecommerce</code> — Agent (Bureau E1)</li>
-          <li><code>agent.pilotage</code> — Agent (Bureau E2)</li>
-          <li><code>chef.service</code> — Chef de service (Bureau E1)</li>
-          <li><code>bureau.xa</code> — Bureau XA</li>
-          <li><code>siccrf</code> — SICCRF</li>
-        </ul>
-        <form id="form-connexion">
-          <label for="identifiant">Identifiant</label>
-          <input type="text" id="identifiant" name="identifiant" autocomplete="username" required>
-          <label for="mot-de-passe">Mot de passe</label>
-          <input type="password" id="mot-de-passe" name="motDePasse" autocomplete="current-password" required>
-          <button type="submit">Se connecter</button>
-          <p id="erreur-connexion" class="erreur" hidden></p>
-        </form>
-      </div>
-    </section>
+    <main>
+        <!-- Écran de connexion -->
+        <section id="vue-connexion" class="vue vue-connexion">
+            <div class="connexion">
+                <aside class="connexion-presentation">
+                    <div class="presentation-contenu">
+                        <p class="surtitre">DGCCRF · SICCRF</p>
+                        <h2>Un guichet unique pour les demandes d'évolution du système d'information</h2>
+                        <p class="chapeau">
+                            Décrivez votre besoin en dialoguant avec l'assistant : il structure la fiche,
+                            puis la demande suit un circuit de validation clair et traçable.
+                        </p>
+                        <ul class="atouts">
+                            <li><strong>Dialogue guidé</strong><span>Des questions ciblées pour une expression de besoin précise.</span></li>
+                            <li><strong>Validation hiérarchique</strong><span>Un valideur identifié, des décisions motivées et tracées.</span></li>
+                            <li><strong>Fiche exportable</strong><span>Export Word et PDF au modèle de fiche du SICCRF.</span></li>
+                        </ul>
+                    </div>
+                    <p class="mention">Démonstrateur · Séminaire « L'innovation maîtrisée » · Données fictives</p>
+                </aside>
 
-    <!-- Application (après connexion) -->
-    <section id="vue-application" class="vue" hidden>
-      <div class="grille">
-        <!-- Colonne gauche : liste des demandes -->
-        <aside class="panneau-liste">
-          <h2>Demandes</h2>
-          <button id="btn-nouvelle" class="bouton-principal">+ Nouvelle demande</button>
-          <div id="liste-demandes" class="liste"></div>
-        </aside>
+                <div class="connexion-formulaire">
+                    <div class="carte-connexion">
+                        <h2>Connexion</h2>
+                        <p class="aide">Accédez à votre espace avec votre identifiant.</p>
 
-        <!-- Colonne droite : détail / dialogue -->
-        <section class="panneau-detail">
-          <div id="vue-vide" class="vide">
-            <p>Sélectionnez une demande ou créez-en une nouvelle.</p>
-          </div>
+                        <form id="form-connexion">
+                            <div class="champ">
+                                <label for="identifiant">Identifiant</label>
+                                <input type="text" id="identifiant" name="identifiant" autocomplete="username" required autofocus>
+                            </div>
+                            <div class="champ">
+                                <label for="mot-de-passe">Mot de passe</label>
+                                <div class="champ-mdp">
+                                    <input type="password" id="mot-de-passe" name="motDePasse" autocomplete="current-password" required>
+                                    <button type="button" id="afficher-mdp" class="lien-discret" aria-pressed="false">Afficher</button>
+                                </div>
+                            </div>
+                            <p id="erreur-connexion" class="erreur" role="alert" hidden></p>
+                            <button type="submit" class="bouton-principal pleine-largeur">Se connecter</button>
+                        </form>
 
-          <!-- Détail d'une demande -->
-          <div id="vue-detail" hidden>
-            <div class="entete-demande">
-              <h2 id="detail-numero"></h2>
-              <span id="detail-statut" class="badge"></span>
+                        <details class="comptes-demo" open>
+                            <summary>Comptes de démonstration</summary>
+                            <p class="aide">Cliquez sur un compte pour le sélectionner (mot de passe : <code>demo</code>).</p>
+
+                            <p class="groupe">Déposer une demande</p>
+                            <div class="comptes-grille">
+                                <button type="button" class="compte" data-compte="agent.ecommerce"><span>Agent · Bureau E1</span><code>agent.ecommerce</code></button>
+                                <button type="button" class="compte" data-compte="agent.pilotage"><span>Agent · Bureau E2</span><code>agent.pilotage</code></button>
+                            </div>
+
+                            <p class="groupe">Valider</p>
+                            <div class="comptes-grille">
+                                <button type="button" class="compte" data-compte="chef.service"><span>Chef de service · E1</span><code>chef.service</code></button>
+                                <button type="button" class="compte" data-compte="chef.service2"><span>Chef de service · E2</span><code>chef.service2</code></button>
+                                <button type="button" class="compte" data-compte="sous.directeur"><span>Sous-direction E</span><code>sous.directeur</code></button>
+                            </div>
+
+                            <p class="groupe">Consulter et instruire</p>
+                            <div class="comptes-grille">
+                                <button type="button" class="compte" data-compte="bureau.xa"><span>Bureau XA</span><code>bureau.xa</code></button>
+                                <button type="button" class="compte" data-compte="siccrf"><span>SICCRF</span><code>siccrf</code></button>
+                            </div>
+                        </details>
+                    </div>
+                </div>
             </div>
-            <p class="meta" id="detail-meta"></p>
-
-            <!-- Fiche éditable -->
-            <h3>Fiche d'expression de besoin</h3>
-            <form id="form-fiche" class="form-fiche">
-              <label>Application ou service concerné
-                <input type="text" name="applicationOuService">
-              </label>
-              <label>Intitulé court
-                <input type="text" name="intituleCourt">
-              </label>
-              <label>Synthèse
-                <textarea name="synthese" rows="3"></textarea>
-              </label>
-              <label>Situation actuelle
-                <textarea name="situationActuelle" rows="2"></textarea>
-              </label>
-              <label>Difficultés rencontrées
-                <textarea name="difficultesRencontrees" rows="2"></textarea>
-              </label>
-              <label>Résultat recherché
-                <textarea name="resultatRecherche" rows="2"></textarea>
-              </label>
-              <label>Critères de réussite
-                <textarea name="criteresDeReussite" rows="2"></textarea>
-              </label>
-              <label>Solution envisagée
-                <textarea name="solutionEnvisagee" rows="2"></textarea>
-              </label>
-              <label>Utilisateurs concernés
-                <textarea name="utilisateursConcernes" rows="2"></textarea>
-              </label>
-              <label>Processus métier concerné
-                <textarea name="processusMetierConcerne" rows="2"></textarea>
-              </label>
-              <label>Bénéfices attendus
-                <textarea name="beneficesAttendus" rows="2"></textarea>
-              </label>
-              <label>Échéance souhaitée
-                <input type="text" name="echeanceSouhaitee">
-              </label>
-              <label>Contraintes
-                <textarea name="contraintes" rows="2"></textarea>
-              </label>
-              <label>Pièces complémentaires
-                <textarea name="piecesComplementaires" rows="2"></textarea>
-              </label>
-              <div class="actions-fiche">
-                <button type="submit" class="bouton-principal">Enregistrer la fiche</button>
-                <button type="button" id="btn-soumettre" class="bouton-secondaire">Soumettre pour validation</button>
-                <button type="button" id="btn-export-word" class="bouton-secondaire">Exporter en Word</button>
-                <button type="button" id="btn-export-pdf" class="bouton-secondaire">Exporter en PDF</button>
-              </div>
-              <p id="message-fiche" class="info" hidden></p>
-            </form>
-
-            <!-- Points à préciser -->
-            <div id="zone-points" class="points" hidden>
-              <h3>Points à préciser</h3>
-              <ul id="liste-points"></ul>
-            </div>
-
-            <!-- Dialogue IA -->
-            <h3>Dialogue avec l'assistant</h3>
-            <div id="historique-dialogue" class="dialogue"></div>
-            <form id="form-dialogue" class="form-dialogue">
-              <input type="text" id="message-dialogue" placeholder="Décrivez votre besoin ou répondez à l'assistant…" required>
-              <button type="submit">Envoyer</button>
-            </form>
-          </div>
-
-          <!-- File de validation (chef de service) -->
-          <div id="vue-validation" hidden>
-            <h2>File de validation</h2>
-            <div id="liste-validation" class="liste"></div>
-          </div>
         </section>
-      </div>
-    </section>
-  </main>
 
-  <script type="module" src="js/app.js"></script>
+        <!-- Application (après connexion) -->
+        <section id="vue-application" class="vue" hidden>
+            <div class="grille">
+                <!-- Colonne gauche : liste des demandes -->
+                <aside class="panneau-liste">
+                    <h2>Demandes</h2>
+                    <button id="btn-nouvelle" class="bouton-principal pleine-largeur">+ Nouvelle demande</button>
+                    <div id="liste-demandes" class="liste"></div>
+                </aside>
+
+                <!-- Colonne droite : détail / dialogue -->
+                <section class="panneau-detail">
+                    <div id="vue-vide" class="vide">
+                        <p><strong>Aucune demande sélectionnée</strong></p>
+                        <p>Sélectionnez une demande dans la liste ou créez-en une nouvelle.</p>
+                    </div>
+
+                    <!-- Détail d'une demande -->
+                    <div id="vue-detail" hidden>
+                        <div class="entete-demande">
+                            <h2 id="detail-numero"></h2>
+                            <span id="detail-statut" class="badge"></span>
+                        </div>
+                        <p class="meta" id="detail-meta"></p>
+
+                        <!-- Fiche éditable -->
+                        <h3>Fiche d'expression de besoin</h3>
+                        <form id="form-fiche" class="form-fiche">
+                            <label>
+                                Application ou service concerné
+                                <input type="text" name="applicationOuService">
+                            </label>
+                            <label>
+                                Intitulé court
+                                <input type="text" name="intituleCourt">
+                            </label>
+                            <label>
+                                Synthèse
+                                <textarea name="synthese" rows="3"></textarea>
+                            </label>
+                            <label>
+                                Situation actuelle
+                                <textarea name="situationActuelle" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Difficultés rencontrées
+                                <textarea name="difficultesRencontrees" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Résultat recherché
+                                <textarea name="resultatRecherche" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Critères de réussite
+                                <textarea name="criteresDeReussite" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Solution envisagée
+                                <textarea name="solutionEnvisagee" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Utilisateurs concernés
+                                <textarea name="utilisateursConcernes" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Processus métier concerné
+                                <textarea name="processusMetierConcerne" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Bénéfices attendus
+                                <textarea name="beneficesAttendus" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Échéance souhaitée
+                                <input type="text" name="echeanceSouhaitee">
+                            </label>
+                            <label>
+                                Contraintes
+                                <textarea name="contraintes" rows="2"></textarea>
+                            </label>
+                            <label>
+                                Pièces complémentaires
+                                <textarea name="piecesComplementaires" rows="2"></textarea>
+                            </label>
+                            <div class="actions-fiche">
+                                <button type="submit" class="bouton-principal">Enregistrer la fiche</button>
+                                <button type="button" id="btn-soumettre" class="bouton-marine">Soumettre pour validation</button>
+                                <span class="espaceur"></span>
+                                <button type="button" id="btn-export-word" class="bouton-secondaire">Exporter en Word</button>
+                                <button type="button" id="btn-export-pdf" class="bouton-secondaire">Exporter en PDF</button>
+                            </div>
+                            <p id="message-fiche" class="info" hidden></p>
+                        </form>
+
+                        <!-- Points à préciser -->
+                        <div id="zone-points" class="points" hidden>
+                            <h3>Points à préciser</h3>
+                            <ul id="liste-points"></ul>
+                        </div>
+
+                        <!-- Dialogue IA -->
+                        <h3>Dialogue avec l'assistant</h3>
+                        <div id="historique-dialogue" class="dialogue" aria-live="polite"></div>
+                        <form id="form-dialogue" class="form-dialogue">
+                            <input type="text" id="message-dialogue" placeholder="Décrivez votre besoin ou répondez à l'assistant…" required>
+                            <button type="submit" class="bouton-principal">Envoyer</button>
+                        </form>
+                    </div>
+
+                    <!-- File de validation (chef de service) -->
+                    <div id="vue-validation" hidden>
+                        <h2>File de validation</h2>
+                        <div id="liste-validation" class="liste"></div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/comptes-demo.js"></script>
 </body>
 </html>
