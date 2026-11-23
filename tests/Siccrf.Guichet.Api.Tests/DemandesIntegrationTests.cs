@@ -3,15 +3,18 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Siccrf.Guichet.Api.Contrats;
 using Siccrf.Guichet.Api.Infrastructure;
+using Siccrf.Guichet.Api.Services;
 
 namespace Siccrf.Guichet.Api.Tests;
 
 /// <summary>
 /// Fabrique d'application pour les tests d'intégration : base SQLite temporaire
-/// (fichier unique par fabrique), seed exécuté au démarrage.
+/// (fichier unique par fabrique), seed exécuté au démarrage, assistant IA simulé.
 /// </summary>
 public class GuichetApiFactory : WebApplicationFactory<Program>
 {
@@ -20,6 +23,15 @@ public class GuichetApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Guichet", $"Data Source={_dbPath}");
+
+        // Les tests n'appellent jamais l'IA réelle, quelle que soit la configuration
+        // (appsettings.json en mode « reel », variable ALBERT_API_KEY définie…) :
+        // l'assistant simulé est déterministe, rapide, sans réseau ni clé API.
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IAssistantService>();
+            services.AddScoped<IAssistantService, AssistantSimule>();
+        });
     }
 
     protected override void Dispose(bool disposing)

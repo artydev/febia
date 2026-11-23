@@ -3,8 +3,6 @@
     <Project Path="src/Siccrf.Guichet.Api/Siccrf.Guichet.Api.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Siccrf.Guichet.Api.Tests/Siccrf.Guichet.Api.Tests.csproj">
-      <Build Solution="Debug|*" Project="false" />
-    </Project>
+    <Project Path="tests/Siccrf.Guichet.Api.Tests/Siccrf.Guichet.Api.Tests.csproj" />
   </Folder>
 </Solution>
