@@ -52,6 +52,7 @@ builder.Services.AddScoped<IAssistantService>(sp =>
 builder.Services.AddScoped<AssistantSimule>();
 builder.Services.AddScoped<INotificationService, NotificationLogService>();
 builder.Services.AddScoped<DemandeService>();
+builder.Services.AddScoped<ExportFicheService>();
 builder.Services.AddScoped<ValidationService>();
 builder.Services.AddScoped<AuthService>();
 

@@ -36,11 +36,17 @@ public class GuichetDbContext(DbContextOptions<GuichetDbContext> options) : DbCo
             e.Property(r => r.Prenom).HasMaxLength(100);
             e.Property(r => r.Service).HasMaxLength(100);
             e.Property(r => r.Courriel).HasMaxLength(200);
+            e.HasOne(r => r.Agent)
+                .WithMany()
+                .HasForeignKey(r => r.AgentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(r => r.AgentId).IsUnique();
         });
 
         // Rattachement
         modelBuilder.Entity<Rattachement>(e =>
         {
+            e.HasIndex(r => r.AgentId).IsUnique(); // un seul valideur par agent
             e.HasOne(r => r.Agent)
                 .WithMany(a => a.Rattachements)
                 .HasForeignKey(r => r.AgentId)

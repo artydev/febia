@@ -82,32 +82,75 @@ public static class SeedDonnees
             Profil = ProfilAgent.Siccrf
         };
 
-        db.Agents.AddRange(agentEcommerce, agentPilotage, chefService, bureauXa, siccrf);
+        // Second chef de service (Bureau E2) et responsable hiérarchique des chefs de service :
+        // chaque Responsable est lié à un compte Agent, de sorte que la personne notifiée
+        // est bien celle qui se connecte et décide.
+        var chefService2 = new Agent
+        {
+            Id = Guid.NewGuid(),
+            Identifiant = "chef.service2",
+            Nom = "Roux",
+            Prenom = "Nadia",
+            Bureau = "Bureau E2",
+            Courriel = "nadia.roux@dgccrf.finances.gouv.fr",
+            MotDePasseHash = MotDePasseHash.Creer("demo"),
+            Profil = ProfilAgent.ChefService
+        };
 
+        var sousDirecteur = new Agent
+        {
+            Id = Guid.NewGuid(),
+            Identifiant = "sous.directeur",
+            Nom = "Petit",
+            Prenom = "Marc",
+            Bureau = "Sous-direction E",
+            Courriel = "marc.petit@dgccrf.finances.gouv.fr",
+            MotDePasseHash = MotDePasseHash.Creer("demo"),
+            Profil = ProfilAgent.ChefService
+        };
+
+        db.Agents.AddRange(agentEcommerce, agentPilotage, chefService, chefService2, sousDirecteur, bureauXa, siccrf);
+
+        // Un Responsable = un compte Agent habilité à valider pour un service.
         var responsableE1 = new Responsable
         {
             Id = Guid.NewGuid(),
-            Nom = "Petit",
-            Prenom = "Marc",
+            AgentId = chefService.Id,
+            Nom = chefService.Nom,
+            Prenom = chefService.Prenom,
             Service = "Bureau E1",
-            Courriel = "marc.petit@dgccrf.finances.gouv.fr"
+            Courriel = chefService.Courriel
         };
 
         var responsableE2 = new Responsable
         {
             Id = Guid.NewGuid(),
-            Nom = "Roux",
-            Prenom = "Nadia",
+            AgentId = chefService2.Id,
+            Nom = chefService2.Nom,
+            Prenom = chefService2.Prenom,
             Service = "Bureau E2",
-            Courriel = "nadia.roux@dgccrf.finances.gouv.fr"
+            Courriel = chefService2.Courriel
         };
 
-        db.Responsables.AddRange(responsableE1, responsableE2);
+        var responsableSousDirection = new Responsable
+        {
+            Id = Guid.NewGuid(),
+            AgentId = sousDirecteur.Id,
+            Nom = sousDirecteur.Nom,
+            Prenom = sousDirecteur.Prenom,
+            Service = "Sous-direction E",
+            Courriel = sousDirecteur.Courriel
+        };
 
+        db.Responsables.AddRange(responsableE1, responsableE2, responsableSousDirection);
+
+        // Chaque agent est rattaché au responsable qui valide ses demandes ;
+        // les chefs de service sont rattachés à la sous-direction (jamais à eux-mêmes).
         db.Rattachements.AddRange(
             new Rattachement { Id = Guid.NewGuid(), AgentId = agentEcommerce.Id, Service = "Bureau E1", ResponsableId = responsableE1.Id },
             new Rattachement { Id = Guid.NewGuid(), AgentId = agentPilotage.Id, Service = "Bureau E2", ResponsableId = responsableE2.Id },
-            new Rattachement { Id = Guid.NewGuid(), AgentId = chefService.Id, Service = "Bureau E1", ResponsableId = responsableE1.Id }
+            new Rattachement { Id = Guid.NewGuid(), AgentId = chefService.Id, Service = "Bureau E1", ResponsableId = responsableSousDirection.Id },
+            new Rattachement { Id = Guid.NewGuid(), AgentId = chefService2.Id, Service = "Bureau E2", ResponsableId = responsableSousDirection.Id }
         );
 
         db.SaveChanges();

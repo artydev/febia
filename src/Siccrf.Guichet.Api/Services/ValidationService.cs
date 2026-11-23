@@ -34,7 +34,6 @@ public class ValidationService(GuichetDbContext db, INotificationService notific
         {
             throw new InvalidOperationException("La demande n'a pas de fiche à soumettre.");
         }
-
         // Détermination du valideur via la table de correspondance agent → service → responsable
         var rattachement = await db.Rattachements
             .Include(r => r.Responsable)
@@ -57,28 +56,22 @@ public class ValidationService(GuichetDbContext db, INotificationService notific
             Commentaire = "Soumission de la demande"
         });
 
-        db.Notifications.Add(new Notification
+        var notification = new Notification
         {
             Id = Guid.NewGuid(),
             DemandeId = demande.Id,
+            Demande = demande,
             Destinataire = rattachement.Responsable.Courriel,
             Type = TypeNotification.Soumission,
             Date = demande.DateSoumission.Value,
             Contenu = $"La demande {demande.Numero} « {demande.VersionCourante.IntituleCourt} » a été soumise pour validation."
-        });
+        };
+        db.Notifications.Add(notification);
 
         await db.SaveChangesAsync(ct);
 
-        // Notification simulée (log)
-        await notifications.NotifierAsync(new Notification
-        {
-            Id = Guid.NewGuid(),
-            DemandeId = demande.Id,
-            Destinataire = rattachement.Responsable.Courriel,
-            Type = TypeNotification.Soumission,
-            Date = demande.DateSoumission.Value,
-            Contenu = $"La demande {demande.Numero} « {demande.VersionCourante.IntituleCourt} » a été soumise pour validation."
-        }, ct);
+        // Notification simulée (log) : même objet que celui enregistré en base
+        await notifications.NotifierAsync(notification, ct);
 
         return demande.VersDto();
     }
@@ -94,17 +87,18 @@ public class ValidationService(GuichetDbContext db, INotificationService notific
             throw new UnauthorizedAccessException("Seul un chef de service peut consulter la file de validation.");
         }
 
-        // Le chef de service est rattaché à un service ; il valide les demandes
-        // dont le valideur est le responsable de ce service.
-        var serviceIds = await db.Rattachements
+        // Le chef de service valide les demandes dont le valideur est son propre compte Responsable.
+        var serviceIds = await db.Responsables
             .Where(r => r.AgentId == agentId)
-            .Select(r => r.ResponsableId)
+            .Select(r => r.Id)
             .ToListAsync(ct);
 
         var demandes = await db.Demandes
             .Include(d => d.Agent)
             .Include(d => d.VersionCourante)
-            .Where(d => d.Statut == StatutDemande.Soumise && d.ValideurId != null && serviceIds.Contains(d.ValideurId.Value))
+            .Where(d => d.Statut == StatutDemande.Soumise
+                        && d.AgentId != agentId // jamais ses propres demandes
+                        && d.ValideurId != null && serviceIds.Contains(d.ValideurId.Value))
             .OrderBy(d => d.DateSoumission)
             .ToListAsync(ct);
 
@@ -180,27 +174,21 @@ public class ValidationService(GuichetDbContext db, INotificationService notific
             _ => $"Votre demande {demande.Numero} a reçu une décision."
         };
 
-        db.Notifications.Add(new Notification
+        var notification = new Notification
         {
             Id = Guid.NewGuid(),
             DemandeId = demande.Id,
+            Demande = demande,
             Destinataire = destinataire,
-            Type = TypeNotification.Decision,
+            Type = decision == TypeDecision.DemanderComplements ? TypeNotification.DemandeComplements : TypeNotification.Decision,
             Date = validation.Date,
             Contenu = contenu
-        });
+        };
+        db.Notifications.Add(notification);
 
         await db.SaveChangesAsync(ct);
 
-        await notifications.NotifierAsync(new Notification
-        {
-            Id = Guid.NewGuid(),
-            DemandeId = demande.Id,
-            Destinataire = destinataire,
-            Type = TypeNotification.Decision,
-            Date = validation.Date,
-            Contenu = contenu
-        }, ct);
+        await notifications.NotifierAsync(notification, ct);
 
         return validation.VersDto(demande.Numero);
     }
@@ -231,9 +219,15 @@ public class ValidationService(GuichetDbContext db, INotificationService notific
             throw new UnauthorizedAccessException("Seul un chef de service peut prendre une décision de validation.");
         }
 
-        // Le chef de service doit être rattaché au responsable valideur de la demande.
-        var estValideur = await db.Rattachements
-            .AnyAsync(r => r.AgentId == agentId && r.ResponsableId == demande.ValideurId, ct);
+        // Séparation des rôles : on ne valide jamais sa propre demande.
+        if (demande.AgentId == agentId)
+        {
+            throw new UnauthorizedAccessException("Vous ne pouvez pas valider votre propre demande.");
+        }
+
+        // Le valideur désigné à la soumission doit être le compte qui décide.
+        var estValideur = await db.Responsables
+            .AnyAsync(r => r.Id == demande.ValideurId && r.AgentId == agentId, ct);
 
         if (!estValideur)
         {

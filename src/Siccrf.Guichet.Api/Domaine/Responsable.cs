@@ -5,6 +5,11 @@ public class Responsable
 {
     public Guid Id { get; set; }
 
+    /// <summary>Compte Agent du valideur : la personne notifiée est celle qui se connecte et décide.</summary>
+    public Guid AgentId { get; set; }
+
+    public Agent? Agent { get; set; }
+
     public required string Nom { get; set; }
 
     public required string Prenom { get; set; }

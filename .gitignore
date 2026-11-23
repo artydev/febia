@@ -19,3 +19,5 @@ obj/
 
 # Mémoire de session de l'agent
 agent_memory/
+
+csagent/

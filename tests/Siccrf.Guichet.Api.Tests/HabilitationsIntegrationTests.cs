@@ -54,12 +54,8 @@ public class HabilitationsIntegrationTests : TestsApiBase
     [Fact]
     public async Task Le_bureau_XA_voit_toutes_les_demandes()
     {
-        // L'agent e-commerce crée une demande
-        var jetonEcommerce = await SeConnecterAsync("agent.ecommerce");
-        var clientEcommerce = CreerClientAuthentifie(jetonEcommerce);
-        var requete = new CreerDemandeRequest("Besoin initial vague.");
-        var reponseCreation = await clientEcommerce.PostAsJsonAsync("/api/demandes", requete);
-        reponseCreation.EnsureSuccessStatusCode();
+        // L'agent e-commerce crée et soumet une demande (un brouillon resterait privé)
+        await CreerDemandeSoumiseAsync();
 
         // Le bureau XA voit toutes les demandes (y compris celle de l'agent e-commerce)
         var jetonXa = await SeConnecterAsync("bureau.xa");
@@ -89,20 +85,35 @@ public class HabilitationsIntegrationTests : TestsApiBase
     }
 
     [Fact]
-    public async Task Le_bureau_XA_peut_consulter_une_demande_qui_ne_lui_appartient_pas()
+    public async Task Le_bureau_XA_peut_consulter_une_demande_soumise_qui_ne_lui_appartient_pas()
+    {
+        var demandeId = await CreerDemandeSoumiseAsync();
+
+        var jetonXa = await SeConnecterAsync("bureau.xa");
+        var clientXa = CreerClientAuthentifie(jetonXa);
+        var reponse = await clientXa.GetAsync($"/api/demandes/{demandeId}");
+        Assert.Equal(HttpStatusCode.OK, reponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Le_brouillon_d_un_agent_reste_prive_meme_pour_XA_et_SICCRF()
     {
         var jetonEcommerce = await SeConnecterAsync("agent.ecommerce");
         var clientEcommerce = CreerClientAuthentifie(jetonEcommerce);
-        var requete = new CreerDemandeRequest("Besoin initial vague.");
-        var reponseCreation = await clientEcommerce.PostAsJsonAsync("/api/demandes", requete);
+        var reponseCreation = await clientEcommerce.PostAsJsonAsync("/api/demandes", new CreerDemandeRequest("Besoin initial vague."));
         reponseCreation.EnsureSuccessStatusCode();
         var creation = await reponseCreation.Content.ReadFromJsonAsync<CreationDemandeDto>();
         Assert.NotNull(creation);
 
-        var jetonXa = await SeConnecterAsync("bureau.xa");
-        var clientXa = CreerClientAuthentifie(jetonXa);
-        var reponse = await clientXa.GetAsync($"/api/demandes/{creation!.Demande.Id}");
-        Assert.Equal(HttpStatusCode.OK, reponse.StatusCode);
+        foreach (var identifiant in new[] { "bureau.xa", "siccrf" })
+        {
+            var client = CreerClientAuthentifie(await SeConnecterAsync(identifiant));
+            var reponse = await client.GetAsync($"/api/demandes/{creation!.Demande.Id}");
+            Assert.Equal(HttpStatusCode.Forbidden, reponse.StatusCode);
+
+            var liste = await (await client.GetAsync("/api/demandes")).Content.ReadFromJsonAsync<List<DemandeDto>>();
+            Assert.DoesNotContain(liste!, d => d.Id == creation!.Demande.Id);
+        }
     }
 
     private async Task<Guid> CreerDemandeSoumiseAsync()

@@ -54,6 +54,34 @@ export const api = {
   editerFiche: (id, fiche) => requete(`/demandes/${id}/fiche`, { method: 'PUT', body: JSON.stringify(fiche) }),
   accepterProposition: (id, versionId) => requete(`/demandes/${id}/accepter-proposition`, { method: 'POST', body: JSON.stringify({ versionId }) }),
 
+  // Export de la fiche (binaire : Word/PDF)
+  exporter: async (id, format) => {
+    const jeton = localStorage.getItem('jeton');
+    const reponse = await fetch(`${API_BASE}/demandes/${id}/export?format=${format}`, {
+      headers: { Authorization: `Bearer ${jeton}` }
+    });
+
+    if (reponse.status === 401) {
+      localStorage.removeItem('jeton');
+      localStorage.removeItem('agent');
+      window.dispatchEvent(new CustomEvent('session-expiree'));
+      throw new Error('Session expirée. Veuillez vous reconnecter.');
+    }
+
+    if (!reponse.ok) {
+      let detail = '';
+      try {
+        const corps = await reponse.json();
+        detail = corps.erreur || corps.message || JSON.stringify(corps);
+      } catch {
+        detail = reponse.statusText;
+      }
+      throw new Error(detail || `Erreur HTTP ${reponse.status}`);
+    }
+
+    return reponse.blob();
+  },
+
   // Validation
   soumettre: (id) => requete(`/demandes/${id}/soumettre`, { method: 'POST', body: JSON.stringify({ confirme: true }) }),
   fileEnAttente: () => requete('/validations/en-attente'),

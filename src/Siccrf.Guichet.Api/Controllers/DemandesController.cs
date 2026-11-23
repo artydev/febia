@@ -14,7 +14,7 @@ namespace Siccrf.Guichet.Api.Controllers;
 [ApiController]
 [Route("api/demandes")]
 [Authorize]
-public class DemandesController(DemandeService demandes) : ControllerBase
+public class DemandesController(DemandeService demandes, ExportFicheService exportFiche) : ControllerBase
 {
     /// <summary>Crée une demande (brouillon) à partir du premier message de l'agent.</summary>
     [HttpPost]
@@ -43,9 +43,9 @@ public class DemandesController(DemandeService demandes) : ControllerBase
             var reponse = await demandes.EnvoyerMessageAsync(id, AgentCourant(), requete.Message, ct);
             return Ok(reponse);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return StatusCode(StatusCodes.Status403Forbidden, new { erreur = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -62,9 +62,9 @@ public class DemandesController(DemandeService demandes) : ControllerBase
             var fiche = await demandes.EditerFicheAsync(id, AgentCourant(), requete, ct);
             return Ok(fiche);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return StatusCode(StatusCodes.Status403Forbidden, new { erreur = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -81,9 +81,9 @@ public class DemandesController(DemandeService demandes) : ControllerBase
             var fiche = await demandes.AccepterPropositionAsync(id, AgentCourant(), requete.VersionId, ct);
             return Ok(fiche);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return StatusCode(StatusCodes.Status403Forbidden, new { erreur = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -99,6 +99,46 @@ public class DemandesController(DemandeService demandes) : ControllerBase
         {
             var demande = await demandes.ConsulterDemandeAsync(id, AgentCourant(), ct);
             return Ok(demande);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { erreur = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { erreur = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Exporte la fiche courante d'une demande au format Word (.docx) ou PDF.
+    /// Droits identiques à la consultation : agent → ses demandes ; chef de service → périmètre ; XA/SICCRF → toutes.
+    /// </summary>
+    [HttpGet("{id:guid}/export")]
+    public async Task<IActionResult> Exporter(Guid id, [FromQuery] string format = "docx", CancellationToken ct = default)
+    {
+        var formatExport = format.ToLowerInvariant() switch
+        {
+            "docx" => ExportFicheService.FormatExport.Docx,
+            "pdf" => ExportFicheService.FormatExport.Pdf,
+            _ => (ExportFicheService.FormatExport?)null
+        };
+
+        if (formatExport is null)
+        {
+            return BadRequest(new { erreur = "Format d'export inconnu. Utilisez 'docx' ou 'pdf'." });
+        }
+
+        try
+        {
+            var demande = await demandes.ConsulterDemandeAsync(id, AgentCourant(), ct);
+            var fiche = demande.FicheCourante
+                ?? throw new InvalidOperationException("La demande n'a pas de fiche courante à exporter.");
+
+            var contenu = exportFiche.Generer(demande, fiche, formatExport.Value);
+            var nomFichier = $"fiche-{demande.Numero}.{ExportFicheService.Extension(formatExport.Value)}";
+
+            return File(contenu, ExportFicheService.MimeType(formatExport.Value), nomFichier);
         }
         catch (UnauthorizedAccessException)
         {

@@ -55,7 +55,7 @@ public class SocleTests
         SeedDonnees.Initialiser(db);
         SeedDonnees.Initialiser(db);
 
-        Assert.Equal(5, db.Agents.Count());
+        Assert.Equal(7, db.Agents.Count());
         Assert.Equal(2, db.Demandes.Count());
     }
 }

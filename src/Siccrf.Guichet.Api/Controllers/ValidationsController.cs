@@ -21,9 +21,9 @@ public class ValidationsController(ValidationService validations) : ControllerBa
             var demande = await validations.SoumettreAsync(id, AgentCourant(), requete.Confirme, ct);
             return Ok(demande);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return StatusCode(StatusCodes.Status403Forbidden, new { erreur = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -50,9 +50,9 @@ public class ValidationsController(ValidationService validations) : ControllerBa
             var validation = await validations.DeciderAsync(demandeId, AgentCourant(), requete, ct);
             return Ok(validation);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return StatusCode(StatusCodes.Status403Forbidden, new { erreur = ex.Message });
         }
         catch (InvalidOperationException ex)
         {

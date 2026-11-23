@@ -171,6 +171,58 @@ public class ValidationIntegrationTests : TestsApiBase
     }
 
     [Fact]
+    public async Task Le_valideur_notifie_est_le_compte_qui_decide()
+    {
+        var demandeId = await CreerDemandeAsync("agent.ecommerce", "Besoin initial vague.");
+        await SoumettreAsync("agent.ecommerce", demandeId);
+
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GuichetDbContext>();
+
+        var demande = db.Demandes.Single(d => d.Id == demandeId);
+        var valideur = db.Responsables.Single(r => r.Id == demande.ValideurId);
+        var compteValideur = db.Agents.Single(a => a.Id == valideur.AgentId);
+
+        Assert.Equal("chef.service", compteValideur.Identifiant);
+        var notification = db.Notifications.Single(n => n.DemandeId == demandeId && n.Type == TypeNotification.Soumission);
+        Assert.Equal(compteValideur.Courriel, notification.Destinataire);
+    }
+
+    [Fact]
+    public async Task Un_chef_de_service_ne_peut_pas_valider_sa_propre_demande()
+    {
+        var demandeId = await CreerDemandeAsync("chef.service", "Besoin initial vague.");
+        await SoumettreAsync("chef.service", demandeId);
+
+        var requete = new DecisionRequest(Decision: "Valider", Commentaire: null);
+
+        // Son propre compte est refusé, et la demande n'apparaît pas dans sa file
+        var clientChef = CreerClientAuthentifie(await SeConnecterAsync("chef.service"));
+        var refus = await clientChef.PostAsJsonAsync($"/api/validations/{demandeId}/decision", requete);
+        Assert.Equal(HttpStatusCode.Forbidden, refus.StatusCode);
+
+        var file = await clientChef.GetFromJsonAsync<List<DemandeEnAttenteDto>>("/api/validations/en-attente");
+        Assert.DoesNotContain(file!, d => d.Id == demandeId);
+
+        // Le responsable hiérarchique (sous-direction) peut valider
+        var clientSousDirecteur = CreerClientAuthentifie(await SeConnecterAsync("sous.directeur"));
+        var ok = await clientSousDirecteur.PostAsJsonAsync($"/api/validations/{demandeId}/decision", requete);
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+    }
+
+    [Fact]
+    public async Task Un_chef_de_service_d_un_autre_perimetre_ne_peut_pas_decider()
+    {
+        var demandeId = await CreerDemandeAsync("agent.ecommerce", "Besoin initial vague.");
+        await SoumettreAsync("agent.ecommerce", demandeId);
+
+        var clientAutreChef = CreerClientAuthentifie(await SeConnecterAsync("chef.service2"));
+        var reponse = await clientAutreChef.PostAsJsonAsync(
+            $"/api/validations/{demandeId}/decision", new DecisionRequest("Valider", null));
+        Assert.Equal(HttpStatusCode.Forbidden, reponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Un_agent_simple_ne_peut_pas_decider()
     {
         var demandeId = await CreerDemandeAsync("agent.ecommerce", "Besoin initial vague.");

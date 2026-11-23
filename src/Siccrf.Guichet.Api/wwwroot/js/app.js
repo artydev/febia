@@ -96,6 +96,9 @@ function basculerVues() {
   vueConnexion.hidden = connecte;
   vueApplication.hidden = !connecte;
 
+    // Le bouton « File de validation » n'a de sens que pour le chef de service
+    boutonValidation.hidden = !(connecte && profilEst('ChefService'));
+
   if (connecte) {
     zoneSession.innerHTML = `
       <span>Connecté : <strong>${etat.agent.value.nomComplet}</strong> (${etat.agent.value.profil})</span>
@@ -285,6 +288,29 @@ $('#btn-soumettre').addEventListener('click', async () => {
   }
 });
 
+// --- Export de la fiche (Word / PDF) ---
+async function exporterFiche(format) {
+  const demande = etat.demandeActive.value;
+  if (!demande) return;
+
+  try {
+    const blob = await api.exporter(demande.id, format);
+    const url = URL.createObjectURL(blob);
+    const lien = document.createElement('a');
+    lien.href = url;
+    lien.download = `fiche-${demande.numero}.${format}`;
+    document.body.appendChild(lien);
+    lien.click();
+    lien.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    afficherErreur(err.message);
+  }
+}
+
+$('#btn-export-word').addEventListener('click', () => exporterFiche('docx'));
+$('#btn-export-pdf').addEventListener('click', () => exporterFiche('pdf'));
+
 // --- Dialogue IA ---
 formDialogue.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -325,16 +351,14 @@ effect(() => {
 
 // --- File de validation (chef de service) ---
 effect(() => {
-  const file = etat.fileValidation.value;
-  if (!profilEst('ChefService')) return;
+    const file = etat.fileValidation.value;
+    listeValidation.innerHTML = '';
+    if (!profilEst('ChefService')) {
+        vueValidation.hidden = true; // évite d'afficher la file d'une session précédente
+        return;
+    }
 
-  listeValidation.innerHTML = '';
-  if (!file.length) {
-    listeValidation.innerHTML = '<p class="vide">Aucune demande en attente.</p>';
-    return;
-  }
-
-  for (const d of file) {
+    if (!file.length) {
     const item = document.createElement('div');
     item.className = 'item-validation';
     item.innerHTML = `

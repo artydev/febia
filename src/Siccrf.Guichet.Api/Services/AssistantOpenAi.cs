@@ -35,13 +35,19 @@ public class AssistantOpenAi : IAssistantService
         _http = http;
     }
 
+    /// <summary>Clé API effective : configuration utilisateur, sinon variable d'environnement ALBERT_API_KEY.</summary>
+    private string CleApiEffective =>
+        !string.IsNullOrWhiteSpace(_options.CleApi)
+            ? _options.CleApi
+            : Environment.GetEnvironmentVariable("ALBERT_API_KEY") ?? string.Empty;
+
     public async Task<ReponseAssistant> TraiterMessageAsync(
         Demande demande,
         VersionFiche ficheCourante,
         string message,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(_options.CleApi) || string.IsNullOrWhiteSpace(_options.Url))
+        if (string.IsNullOrWhiteSpace(CleApiEffective) || string.IsNullOrWhiteSpace(_options.Url))
         {
             throw new InvalidOperationException(
                 "L'assistant OpenAI n'est pas configuré (CleApi/Url manquantes). Utilisez l'assistant simulé pour la démonstration.");
@@ -57,19 +63,39 @@ public class AssistantOpenAi : IAssistantService
             - Réponds en JSON avec les champs : message, fiche (rubriques du modèle), questionsComplementaires, pointsAPreciser.
             """;
 
+        var fiche = new
+        {
+            ficheCourante.ApplicationOuService,
+            ficheCourante.IntituleCourt,
+            ficheCourante.Synthese,
+            ficheCourante.SituationActuelle,
+            ficheCourante.DifficultesRencontrees,
+            ficheCourante.ExempleRepresentatif,
+            ficheCourante.ResultatRecherche,
+            ficheCourante.CriteresDeReussite,
+            ficheCourante.SolutionEnvisagee,
+            ficheCourante.UtilisateursConcernes,
+            ficheCourante.ProcessusMetierConcerne,
+            ficheCourante.BeneficesAttendus,
+            ficheCourante.EcheanceSouhaitee,
+            ficheCourante.Contraintes,
+            ficheCourante.PiecesComplementaires,
+            ficheCourante.PointsAPreciser
+        };
+
         var contenu = new
         {
             model = _options.Modele,
             messages = new object[]
             {
                 new { role = "system", content = systeme },
-                new { role = "user", content = $"Demande n° {demande.Numero}. Fiche courante : {JsonSerializer.Serialize(ficheCourante)}. Message de l'agent : {message}" }
+                new { role = "user", content = $"Demande n° {demande.Numero}. Fiche courante : {JsonSerializer.Serialize(fiche)}. Message de l'agent : {message}" }
             },
             temperature = 0.2
         };
 
         using var requete = new HttpRequestMessage(HttpMethod.Post, _options.Url);
-        requete.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.CleApi);
+        requete.Headers.Authorization = new AuthenticationHeaderValue("Bearer", CleApiEffective);
         requete.Content = new StringContent(JsonSerializer.Serialize(contenu), Encoding.UTF8, "application/json");
 
         using var reponse = await _http.SendAsync(requete, ct);

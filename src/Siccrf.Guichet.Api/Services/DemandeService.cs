@@ -195,16 +195,17 @@ public class DemandeService(GuichetDbContext db, IAssistantService assistant)
 
             case ProfilAgent.ChefService:
                 // Périmètre : demandes dont le valideur est le responsable rattaché au chef de service.
-                var responsableIds = await db.Rattachements
+                var responsableIds = await db.Responsables
                     .Where(r => r.AgentId == agentId)
-                    .Select(r => r.ResponsableId)
+                    .Select(r => r.Id)
                     .ToListAsync(ct);
                 requete = requete.Where(d => d.ValideurId != null && responsableIds.Contains(d.ValideurId.Value));
                 break;
 
             case ProfilAgent.BureauXA:
             case ProfilAgent.Siccrf:
-                // Toutes les demandes.
+                // Toutes les demandes soumises ; les brouillons des autres restent privés.
+                requete = requete.Where(d => d.Statut != StatutDemande.Brouillon || d.AgentId == agentId);
                 break;
 
             default:
@@ -252,11 +253,15 @@ public class DemandeService(GuichetDbContext db, IAssistantService assistant)
         {
             case ProfilAgent.BureauXA:
             case ProfilAgent.Siccrf:
-                return;
+                if (demande.Statut != StatutDemande.Brouillon)
+                {
+                    return;
+                }
+                break; // un brouillon reste privé à son auteur
 
             case ProfilAgent.ChefService:
-                var estValideur = await db.Rattachements
-                    .AnyAsync(r => r.AgentId == agentId && r.ResponsableId == demande.ValideurId, ct);
+                var estValideur = await db.Responsables
+                    .AnyAsync(r => r.Id == demande.ValideurId && r.AgentId == agentId, ct);
                 if (estValideur)
                 {
                     return;
