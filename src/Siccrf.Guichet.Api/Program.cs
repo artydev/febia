@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -33,8 +34,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // Base de données SQLite
-builder.Services.AddDbContext<GuichetDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Guichet")));
+builder.Services.AddDbContext<GuichetDbContext>((sp, options) =>
+{
+    // Un chemin relatif est résolu depuis le dossier du projet (et non depuis le dossier de
+    // travail du processus, qui varie : IIS Express, Kestrel, dotnet run…).
+    var chaine = new SqliteConnectionStringBuilder(
+        sp.GetRequiredService<IConfiguration>().GetConnectionString("Guichet"));
+
+    if (!Path.IsPathRooted(chaine.DataSource) && chaine.DataSource != ":memory:")
+    {
+        chaine.DataSource = Path.Combine(
+            sp.GetRequiredService<IWebHostEnvironment>().ContentRootPath,
+            chaine.DataSource);
+    }
+
+    options.UseSqlite(chaine.ToString());
+});
 
 // Assistant IA : simulé par défaut, réel (OpenAI/Azure OpenAI) si configuré
 builder.Services.Configure<OptionsAssistantOpenAi>(builder.Configuration.GetSection(OptionsAssistantOpenAi.Section));
